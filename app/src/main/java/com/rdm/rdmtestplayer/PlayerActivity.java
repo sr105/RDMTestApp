@@ -1,12 +1,12 @@
 package com.rdm.rdmtestplayer;
 
-import android.support.v7.app.ActionBarActivity;
+import android.app.Activity;
+import android.graphics.Color;
 import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuItem;
+import android.view.View;
 
 
-public class PlayerActivity extends ActionBarActivity {
+public class PlayerActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -14,26 +14,23 @@ public class PlayerActivity extends ActionBarActivity {
         setContentView(R.layout.activity_player);
     }
 
-
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_player, menu);
-        return true;
+    protected void onResume() {
+        super.onResume();
+        hideNavigationBar();
+        getWindow().getDecorView().setBackgroundColor(Color.parseColor("#ffffff"));
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        hideNavigationBar();
     }
+
+    public void hideNavigationBar() {
+        // Everything else (full screen, hide status bar, etc.) is done by our theme
+        int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
+        getWindow().getDecorView().setSystemUiVisibility(uiOptions);
+    }
+
 }
