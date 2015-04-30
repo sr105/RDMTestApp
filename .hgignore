@@ -1,0 +1,73 @@
+syntax: glob
+
+.git
+
+src/**/*.class
+
+**/*.orig
+
+NEOCAST_on_Rails/rdm/config/database.yml
+
+SharedConfiguration/version/number_with_full_commit_hash
+SharedConfiguration/version/number_with_short_commit_hash
+
+output
+
+products/**/rdmlogit
+products/**/rdmwaitforhotkey
+products/**/rdmremoterender
+products/**/watchdog/watchdog
+
+products/**/*.o
+src/**/*.o
+src/**/*.so
+
+src/java/NEOCAST.iws
+
+src/android/tests
+
+#### Android ####
+# Built application files
+build/
+
+src/android/**/NEOCASTPlayer.jar
+src/java/.ant-targets-build.xml
+src/android/**/manifest-merger-release-report.txt
+src/android/**/neocastAndroid-release.apk
+
+# Crashlytics configuations
+com_crashlytics_export_strings.xml
+ 
+# Local configuration file (sdk path, etc)
+local.properties
+ 
+# Gradle generated files
+.gradle/
+ 
+# Signing files
+.signing/
+ 
+# User-specific configurations
+.idea/libraries/
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/.name
+.idea/compiler.xml
+.idea/copyright/profiles_settings.xml
+.idea/encodings.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/scopes/scope_settings.xml
+.idea/vcs.xml
+*.iml
+ 
+# OS-specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+
