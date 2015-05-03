@@ -19,39 +19,42 @@ public class ContentSync {
     private static List<Content> sContentList;
 
     interface OnProgressUpdateListener {
-        void downloadStarted(String url);
+        void setNumberOfDownloads(int numberOfDownloads);
 
-        void downloadProgress(double percentComplete);
+        void downloadStarted(String url, long totalBytes);
+
+        void downloadProgress(long totalBytesRead);
 
         void downloadFinished();
     }
 
     private static OnProgressUpdateListener sOnProgressUpdateListener;
 
-    public static void sync(OnProgressUpdateListener onProgressUpdateListener) throws Exception {
+    public static void sync(OnProgressUpdateListener onProgressUpdateListener) throws IOException {
         sOnProgressUpdateListener = onProgressUpdateListener;
-        for (Content content : getContentList()) {
+        List<Content> contentList = getContentList();
+        if (sOnProgressUpdateListener != null) {
+            int numberToDownload = contentList.size() - getLocalContentList().size();
+            sOnProgressUpdateListener.setNumberOfDownloads(numberToDownload);
+        }
+        for (Content content : contentList) {
             content.sync();
         }
     }
 
     public static List<String> getLocalContentList() {
+        if (sContentList == null)
+            return new ArrayList<>();
+
         List<String> localList = new ArrayList<>();
-        try {
-            for (Content content : getContentList()) {
-                if (!content.needsUpdate())
-                    localList.add(content.mLocalPath);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+        for (Content content : sContentList) {
+            if (!content.needsUpdate())
+                localList.add(content.mLocalPath);
         }
         return localList;
     }
 
-    public static List<Content> getContentList() throws Exception {
-        if (sContentList != null) {
-            return sContentList;
-        }
+    public static List<Content> getContentList() throws IOException {
         sContentList = new ArrayList<>();
         String list = getUrl(Content.getContentListUrl());
         StringReader stringReader = new StringReader(list);
@@ -60,8 +63,8 @@ public class ContentSync {
         while ((line = bufferedReader.readLine()) != null) {
             try {
                 sContentList.add(new Content(line));
-            } catch (IllegalArgumentException ignored) {
-                // Logged in Content constructor
+            } catch (IllegalArgumentException e) {
+                Log.e(TAG, "", e);
             }
         }
 
@@ -75,13 +78,13 @@ public class ContentSync {
         return null;
     }
 
+    // outputStream will be closed
     public static boolean getUrlBytes(String urlSpec, OutputStream outputStream, long totalBytes) throws IOException {
-        if (sOnProgressUpdateListener != null)
-            sOnProgressUpdateListener.downloadStarted(urlSpec);
-        Log.i(TAG, "Downloading: " + urlSpec);
+        if (urlSpec == null || outputStream == null)
+            return false;
+        downloadStarted(urlSpec, totalBytes);
         URL url = new URL(urlSpec);
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        double totalBytesAsDouble = totalBytes / 100f;
         try {
             InputStream in = connection.getInputStream();
 
@@ -90,34 +93,39 @@ public class ContentSync {
 
             int bytesRead = 0;
             long totalBytesRead = 0;
-            double progress = 0f;
-            long updateTime = 0;
             byte[] buffer = new byte[32 * 1024];
             while ((bytesRead = in.read(buffer)) > 0) {
                 totalBytesRead += bytesRead;
-                if (sOnProgressUpdateListener != null && totalBytes > 0) {
-                    double p = Math.ceil(totalBytesRead / totalBytesAsDouble);
-                    if (p > progress && System.nanoTime() > updateTime) {
-                        updateTime = System.nanoTime() + 1000000000L;
-                        progress = p;
-                        sOnProgressUpdateListener.downloadProgress(progress);
-                    }
-                }
-                //Log.i(TAG, "bytes = " + totalBytesRead);
+                downloadProgress(totalBytesRead);
                 outputStream.write(buffer, 0, bytesRead);
             }
-            outputStream.close();
-            Log.i(TAG, "Finished, bytes = " + totalBytesRead);
-            if (sOnProgressUpdateListener != null)
-                sOnProgressUpdateListener.downloadFinished();
+            downloadFinished(totalBytesRead);
             return true;
         } finally {
+            outputStream.close();
             connection.disconnect();
         }
     }
 
     public static String getUrl(String urlSpec) throws IOException {
         return new String(getUrlBytes(urlSpec));
+    }
+
+    private static void downloadStarted(String urlSpec, long totalBytes) {
+        if (sOnProgressUpdateListener != null)
+            sOnProgressUpdateListener.downloadStarted(urlSpec, totalBytes);
+        Log.i(TAG, "Downloading: " + urlSpec);
+    }
+
+    private static void downloadProgress(long bytes) {
+        if (sOnProgressUpdateListener != null)
+            sOnProgressUpdateListener.downloadProgress(bytes);
+    }
+
+    private static void downloadFinished(long bytes) {
+        Log.i(TAG, "Finished, bytes = " + bytes);
+        if (sOnProgressUpdateListener != null)
+            sOnProgressUpdateListener.downloadFinished();
     }
 
 }

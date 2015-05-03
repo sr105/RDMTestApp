@@ -26,12 +26,10 @@ public class Content {
         return ENDPOINT + CONTENT_LIST;
     }
 
-    public Content(final String contentLine) {
+    public Content(final String contentLine) throws IllegalArgumentException {
         final String[] parts = contentLine.split(",");
-        if (parts.length < Content.NUM_CONTENT_LINE_PARTS) {
-            Log.w(TAG, "Invalid content line: " + contentLine);
+        if (parts.length < Content.NUM_CONTENT_LINE_PARTS)
             throw new IllegalArgumentException("Invalid content line: " + contentLine);
-        }
 
         final String fileName = parts[0];
         mRemotePath = ENDPOINT + Uri.encode(fileName, "/");

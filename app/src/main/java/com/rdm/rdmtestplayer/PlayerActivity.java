@@ -10,6 +10,8 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.VideoView;
 
@@ -21,7 +23,13 @@ import java.util.List;
 public class PlayerActivity extends Activity {
     private static final String TAG = "PlayerActivity";
 
-    TextView mTextView;
+    LinearLayout mProgressLayout;
+    TextView mProgressTitle;
+    TextView mProgressStepName;
+    ProgressBar mStepProgress;
+    ProgressBar mCompleteProgress;
+    TextView mProgressErrors;
+
     VideoView mVideoView;
 
     List<Uri> mVideoUriList;
@@ -35,6 +43,15 @@ public class PlayerActivity extends Activity {
 
         FrameLayout rootFrame = (FrameLayout) findViewById(R.id.rootFrame);
 
+        mProgressLayout = (LinearLayout) findViewById(R.id.progressLayout);
+        mProgressTitle = (TextView) findViewById(R.id.progressTitle);
+        mProgressStepName = (TextView) findViewById(R.id.progressStepName);
+        mStepProgress = (ProgressBar) findViewById(R.id.progressStepProgress);
+        mCompleteProgress = (ProgressBar) findViewById(R.id.progressCompleteProgress);
+        mProgressErrors = (TextView) findViewById(R.id.progressErrors);
+
+        mProgressTitle.setText("Synchronizing Content...\n");
+
         mVideoView = new VideoView(this);
         mVideoView.setOnCompletionListener(mOnCompletionListener);
         mVideoView.setOnErrorListener(mOnErrorListener);
@@ -44,8 +61,6 @@ public class PlayerActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT);
         mVideoView.setVisibility(View.INVISIBLE);
 
-        mTextView = (TextView) findViewById(R.id.textView);
-        mTextView.setText("Synchronizing Content...\n");
         mSyncAsyncTask.execute();
     }
 
@@ -86,14 +101,43 @@ public class PlayerActivity extends Activity {
 
     private final AsyncTask<Void, String, Void> mSyncAsyncTask = new AsyncTask<Void, String, Void>() {
         ContentSync.OnProgressUpdateListener onProgressUpdateListener = new ContentSync.OnProgressUpdateListener() {
+            private final long UPDATE_INTERVAL_IN_NANOS = 1000000000L; // 1 second
+            private long mNextUpdate = -1L;
+            private double mTotalBytesAsDouble = 0.0d;
+            private long mBytesPerPercentagePoint = 0L;
+            private long mNextUpdateTime = 0L;
+
             @Override
-            public void downloadStarted(String url) {
+            public void setNumberOfDownloads(int numberOfDownloads) {
+                publishProgress("n", "" + numberOfDownloads);
+            }
+
+            @Override
+            public void downloadStarted(String url, long totalBytes) {
+                mNextUpdateTime = 0L;
+                mNextUpdate = -1L;
+                mTotalBytesAsDouble = totalBytes;
+                if (totalBytes <= 0)
+                    mBytesPerPercentagePoint = 0L;
+                else
+                    mBytesPerPercentagePoint = totalBytes / 100;
                 publishProgress("d", url);
             }
 
             @Override
-            public void downloadProgress(double percentComplete) {
-                publishProgress("p", String.format("%3.0f%%", percentComplete));
+            public void downloadProgress(long bytes) {
+                // Update if:
+                // - we can compute a percentage
+                // - one second has elapsed since the last update
+                // - progress is at least one whole point greater than the last update
+                if (mBytesPerPercentagePoint == 0
+                        || System.nanoTime() < mNextUpdateTime
+                        || bytes < mNextUpdate)
+                    return;
+                mNextUpdateTime = System.nanoTime() + UPDATE_INTERVAL_IN_NANOS;
+                double progress = Math.ceil(100.0d * bytes / mTotalBytesAsDouble);
+                mNextUpdate = mBytesPerPercentagePoint * (long) progress;
+                publishProgress("p", "" + (long)progress);
             }
 
             @Override
@@ -107,20 +151,29 @@ public class PlayerActivity extends Activity {
         @Override
         protected void onProgressUpdate(String... values) {
             super.onProgressUpdate(values);
+            if (values[0].equals("n")) {
+                mCompleteProgress.setMax(Integer.valueOf(values[1]));
+                mCompleteProgress.setProgress(0);
+            }
             if (values[0].equals("d")) {
-                mTextView.setText(mTextView.getText().toString() + "\n" + "Downloading: " + values[1]);
-                mPreviousText = mTextView.getText().toString();
+                mProgressStepName.setText(values[1]);
+                mStepProgress.setProgress(0);
+                mCompleteProgress.incrementProgressBy(1);
                 return;
             }
             if (values[0].equals("p")) {
-                mTextView.setText(mPreviousText + "...  " + values[1]);
+                int value = Integer.valueOf(values[1]);
+                mStepProgress.setProgress(value);
                 return;
             }
             if (values[0].equals("e")) {
-                mTextView.setText(mPreviousText + "\n");
+                mStepProgress.setProgress(100);
                 return;
             }
-
+            if (values[0].equals("x")) {
+                mProgressErrors.append(values[1]);
+                return;
+            }
         }
 
         @Override
@@ -128,6 +181,7 @@ public class PlayerActivity extends Activity {
             try {
                 ContentSync.sync(onProgressUpdateListener);
             } catch (Exception e) {
+                publishProgress("x", e.getLocalizedMessage());
                 e.printStackTrace();
             }
             return null;
@@ -138,6 +192,7 @@ public class PlayerActivity extends Activity {
             super.onPostExecute(aVoid);
 
             mVideoView.setVisibility(View.VISIBLE);
+            mProgressLayout.setVisibility(View.GONE);
             populateVideoList();
             mOnCompletionListener.onCompletion(null);
         }
