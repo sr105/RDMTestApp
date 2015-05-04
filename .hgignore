@@ -6,26 +6,6 @@ src/**/*.class
 
 **/*.orig
 
-NEOCAST_on_Rails/rdm/config/database.yml
-
-SharedConfiguration/version/number_with_full_commit_hash
-SharedConfiguration/version/number_with_short_commit_hash
-
-output
-
-products/**/rdmlogit
-products/**/rdmwaitforhotkey
-products/**/rdmremoterender
-products/**/watchdog/watchdog
-
-products/**/*.o
-src/**/*.o
-src/**/*.so
-
-src/java/NEOCAST.iws
-
-src/android/tests
-
 #### Android ####
 # Built application files
 build/
