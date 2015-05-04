@@ -114,7 +114,7 @@ public class ContentSync {
     private static void downloadStarted(String urlSpec, long totalBytes) {
         if (sOnSyncProgressListener != null)
             sOnSyncProgressListener.downloadStarted(urlSpec, totalBytes);
-        Log.i(TAG, "Downloading: " + urlSpec);
+        //Log.i(TAG, "Downloading: " + urlSpec);
     }
 
     private static void downloadProgress(long bytes) {
@@ -123,7 +123,7 @@ public class ContentSync {
     }
 
     private static void downloadFinished(long bytes) {
-        Log.i(TAG, "Finished, bytes = " + bytes);
+        //Log.i(TAG, "Finished, bytes = " + bytes);
         if (sOnSyncProgressListener != null)
             sOnSyncProgressListener.downloadFinished();
     }
