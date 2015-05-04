@@ -11,20 +11,26 @@ import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-public class Content {
+/*
+ * A CSV formatted content list is loaded from an HTTP url. Then,
+ * content is synced locally based on the information in the list.
+ * Format:
+ *     filepath relative to base url,size in bytes,md5 hash
+ */
+class Content {
     private static final String TAG = "Content";
 
-
-    private static final String BASEPATH = "/sdcard/media/";
+    // TODO: use getExternalFilesDir() or similar here for BASE_PATH
+    private static final String BASE_PATH = "/sdcard/media/";
     private static final String ENDPOINT = "http://3gfp.com/i/rdm_test_media/";
     private static final String CONTENT_LIST = "content_list";
-    public static final int NUM_CONTENT_LINE_PARTS = 3;
+    private static final int NUM_CONTENT_LINE_PARTS = 3;
 
-    boolean mUpToDate = false;
-    String mRemotePath;
+    private boolean mUpToDate = false;
+    private String mRemotePath;
     String mLocalPath;
-    long mSizeInBytes;
-    String mMd5String;
+    private long mSizeInBytes;
+    private String mMd5String;
 
     public static String getContentListUrl() {
         return ENDPOINT + CONTENT_LIST;
@@ -37,7 +43,7 @@ public class Content {
 
         final String fileName = parts[0];
         mRemotePath = ENDPOINT + Uri.encode(fileName, "/");
-        mLocalPath = BASEPATH + fileName;
+        mLocalPath = BASE_PATH + fileName;
         mSizeInBytes = Long.valueOf(parts[1]);
         mMd5String = parts[2];
 
@@ -69,8 +75,9 @@ public class Content {
         }
     }
 
-    public void download() throws IOException {
+    private void download() throws IOException {
         File file = new File(mLocalPath);
+        //noinspection ResultOfMethodCallIgnored
         file.getParentFile().mkdirs();
         if (!ContentSync.getUrlBytes(mRemotePath, new FileOutputStream(file), mSizeInBytes)) {
             Log.e(TAG, "Failed to download: " + mRemotePath);
@@ -79,30 +86,37 @@ public class Content {
         needsUpdate();
     }
 
-    public static String getMd5String(File file) {
+    private static String getMd5String(File file) {
         byte[] hash = getMd5(file);
         String result = "";
-
-        for (int i = 0; i < hash.length; i++) {
-            result += Integer.toString((hash[i] & 0xff) + 0x100, 16).substring(1);
+        for (byte hashByte : hash != null ? hash : new byte[0]) {
+            result += Integer.toString((hashByte & 0xff) + 0x100, 16).substring(1);
         }
         //Log.i(TAG, "MD5: " + file.getName() + "  " + result);
         return result;
     }
 
-    public static byte[] getMd5(File file) {
+    private static byte[] getMd5(File file) {
         MessageDigest md = null;
-        FileInputStream is = null;
+        DigestInputStream dis = null;
         try {
             md = MessageDigest.getInstance("MD5");
-            DigestInputStream dis = new DigestInputStream(new FileInputStream(file), md);
+            dis = new DigestInputStream(new FileInputStream(file), md);
             /* Read stream to EOF as normal... */
             byte[] buffer = new byte[32 * 1024];
-            while (dis.read(buffer) != -1) {
+            int bytesRead = 0;
+            while (bytesRead != -1) {
+                bytesRead = dis.read(buffer);
             }
         } catch (NoSuchAlgorithmException | IOException e) {
             Log.e(TAG, "", e);
             return null;
+        } finally {
+            try {
+                if (dis != null)
+                    dis.close();
+            } catch (IOException ignored) {
+            }
         }
 
         return md.digest();

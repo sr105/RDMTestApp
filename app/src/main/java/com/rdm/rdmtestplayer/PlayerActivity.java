@@ -19,9 +19,9 @@ import java.util.List;
 public class PlayerActivity extends Activity {
     private static final String TAG = "PlayerActivity";
 
-    VideoView mVideoView;
+    private VideoView mVideoView;
 
-    List<Uri> mVideoUriList;
+    private List<Uri> mVideoUriList;
     private int mUriIndex = -1;
 
     @Override
@@ -41,7 +41,7 @@ public class PlayerActivity extends Activity {
         new ContentSyncAsyncTask(this, mOnContentSyncFinishedRunnable).execute();
     }
 
-    private Runnable mOnContentSyncFinishedRunnable = new Runnable() {
+    private final Runnable mOnContentSyncFinishedRunnable = new Runnable() {
         @Override
         public void run() {
             mVideoView.setVisibility(View.VISIBLE);
@@ -51,7 +51,7 @@ public class PlayerActivity extends Activity {
     };
 
     private void populateVideoList() {
-        mVideoUriList = new ArrayList<Uri>();
+        mVideoUriList = new ArrayList<>();
         for (String path : ContentSync.getLocalContentList()) {
             mVideoUriList.add(Uri.parse(path));
         }
@@ -98,7 +98,7 @@ public class PlayerActivity extends Activity {
         hideNavigationBar();
     }
 
-    public void hideNavigationBar() {
+    private void hideNavigationBar() {
         // Everything else (full screen, hide status bar, etc.) is done by our theme
         int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
         getWindow().getDecorView().setSystemUiVisibility(uiOptions);

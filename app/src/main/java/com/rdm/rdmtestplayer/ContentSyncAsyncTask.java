@@ -1,5 +1,6 @@
 package com.rdm.rdmtestplayer;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.os.AsyncTask;
 import android.view.View;
@@ -8,12 +9,11 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-public class ContentSyncAsyncTask extends AsyncTask<Void, String, Void> {
+class ContentSyncAsyncTask extends AsyncTask<Void, String, Void> {
 
     private final Runnable mOnFinishedRunnable;
 
     private LinearLayout mProgressLayout;
-    private TextView mProgressTitle;
     private TextView mProgressStepName;
     private ProgressBar mStepProgress;
     private ProgressBar mCompleteProgress;
@@ -35,27 +35,29 @@ public class ContentSyncAsyncTask extends AsyncTask<Void, String, Void> {
         mProgressLayout.setVisibility(View.VISIBLE);
     }
 
-    public void addToActivity(Activity activity) {
+    @SuppressLint("InflateParams")
+    private void addToActivity(Activity activity) {
         mProgressLayout = (LinearLayout) activity.getLayoutInflater().inflate(R.layout.progress, null);
         ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT);
         activity.addContentView(mProgressLayout, layoutParams);
 
         mProgressLayout = (LinearLayout) mProgressLayout.findViewById(R.id.progressLayout);
-        mProgressTitle = (TextView) mProgressLayout.findViewById(R.id.progressTitle);
+        TextView progressTitle = (TextView) mProgressLayout.findViewById(R.id.progressTitle);
         mProgressStepName = (TextView) mProgressLayout.findViewById(R.id.progressStepName);
         mStepProgress = (ProgressBar) mProgressLayout.findViewById(R.id.progressStepProgress);
         mCompleteProgress = (ProgressBar) mProgressLayout.findViewById(R.id.progressCompleteProgress);
         mProgressErrors = (TextView) mProgressLayout.findViewById(R.id.progressErrors);
 
-        mProgressTitle.setText("Synchronizing Content...\n");
+        progressTitle.setText("Synchronizing Content...\n");
     }
 
-    public void removeFromActivity() {
+    private void removeFromActivity() {
         ViewGroup viewGroup = (ViewGroup) mProgressLayout.getParent();
         viewGroup.removeView(mProgressLayout);
     }
 
+    @SuppressWarnings("UnnecessaryReturnStatement")
     @Override
     protected void onProgressUpdate(String... values) {
         super.onProgressUpdate(values);
@@ -95,7 +97,7 @@ public class ContentSyncAsyncTask extends AsyncTask<Void, String, Void> {
         return null;
     }
 
-    protected void finishUp() {
+    private void finishUp() {
         removeFromActivity();
         if (mOnFinishedRunnable != null)
             mOnFinishedRunnable.run();
@@ -111,7 +113,7 @@ public class ContentSyncAsyncTask extends AsyncTask<Void, String, Void> {
         finishUp();
     }
 
-    ContentSync.OnSyncProgressListener mOnSyncProgressListener = new ContentSync.OnSyncProgressListener() {
+    private final ContentSync.OnSyncProgressListener mOnSyncProgressListener = new ContentSync.OnSyncProgressListener() {
         private final long UPDATE_INTERVAL_IN_NANOS = 1000000000L; // 1 second
         private long mNextUpdate = -1L;
         private double mTotalBytesAsDouble = 0.0d;

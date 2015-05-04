@@ -6,4 +6,5 @@
     android:layout_height="match_parent"
     android:background="#ffffff"
     android:padding="0px"
-    tools:context=".PlayerActivity"/>
+    tools:context=".PlayerActivity"
+    tools:ignore="Overdraw"/>

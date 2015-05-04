@@ -13,7 +13,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ContentSync {
+class ContentSync {
     private static final String TAG = "ContentSync";
 
     private static List<Content> sContentList;
@@ -54,7 +54,7 @@ public class ContentSync {
         return localList;
     }
 
-    public static List<Content> getContentList() throws IOException {
+    private static List<Content> getContentList() throws IOException {
         sContentList = new ArrayList<>();
         String list = getUrl(Content.getContentListUrl());
         StringReader stringReader = new StringReader(list);
@@ -71,11 +71,11 @@ public class ContentSync {
         return sContentList;
     }
 
-    public static byte[] getUrlBytes(String urlSpec) throws IOException {
+    private static byte[] getUrlBytes(String urlSpec) throws IOException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         if (getUrlBytes(urlSpec, out, 0))
             return out.toByteArray();
-        return null;
+        return new byte[0];
     }
 
     // outputStream will be closed
@@ -91,7 +91,7 @@ public class ContentSync {
             if (connection.getResponseCode() != HttpURLConnection.HTTP_OK)
                 return false;
 
-            int bytesRead = 0;
+            int bytesRead;
             long totalBytesRead = 0;
             byte[] buffer = new byte[32 * 1024];
             while ((bytesRead = in.read(buffer)) > 0) {
@@ -107,7 +107,7 @@ public class ContentSync {
         }
     }
 
-    public static String getUrl(String urlSpec) throws IOException {
+    private static String getUrl(String urlSpec) throws IOException {
         return new String(getUrlBytes(urlSpec));
     }
 
@@ -122,6 +122,7 @@ public class ContentSync {
             sOnSyncProgressListener.downloadProgress(bytes);
     }
 
+    @SuppressWarnings("UnusedParameters")
     private static void downloadFinished(long bytes) {
         //Log.i(TAG, "Finished, bytes = " + bytes);
         if (sOnSyncProgressListener != null)
