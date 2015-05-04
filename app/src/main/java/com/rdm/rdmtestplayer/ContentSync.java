@@ -18,7 +18,7 @@ public class ContentSync {
 
     private static List<Content> sContentList;
 
-    interface OnProgressUpdateListener {
+    interface OnSyncProgressListener {
         void setNumberOfDownloads(int numberOfDownloads);
 
         void downloadStarted(String url, long totalBytes);
@@ -28,14 +28,14 @@ public class ContentSync {
         void downloadFinished();
     }
 
-    private static OnProgressUpdateListener sOnProgressUpdateListener;
+    private static OnSyncProgressListener sOnSyncProgressListener;
 
-    public static void sync(OnProgressUpdateListener onProgressUpdateListener) throws IOException {
-        sOnProgressUpdateListener = onProgressUpdateListener;
+    public static void sync(OnSyncProgressListener onSyncProgressListener) throws IOException {
+        sOnSyncProgressListener = onSyncProgressListener;
         List<Content> contentList = getContentList();
-        if (sOnProgressUpdateListener != null) {
+        if (sOnSyncProgressListener != null) {
             int numberToDownload = contentList.size() - getLocalContentList().size();
-            sOnProgressUpdateListener.setNumberOfDownloads(numberToDownload);
+            sOnSyncProgressListener.setNumberOfDownloads(numberToDownload);
         }
         for (Content content : contentList) {
             content.sync();
@@ -112,20 +112,20 @@ public class ContentSync {
     }
 
     private static void downloadStarted(String urlSpec, long totalBytes) {
-        if (sOnProgressUpdateListener != null)
-            sOnProgressUpdateListener.downloadStarted(urlSpec, totalBytes);
+        if (sOnSyncProgressListener != null)
+            sOnSyncProgressListener.downloadStarted(urlSpec, totalBytes);
         Log.i(TAG, "Downloading: " + urlSpec);
     }
 
     private static void downloadProgress(long bytes) {
-        if (sOnProgressUpdateListener != null)
-            sOnProgressUpdateListener.downloadProgress(bytes);
+        if (sOnSyncProgressListener != null)
+            sOnSyncProgressListener.downloadProgress(bytes);
     }
 
     private static void downloadFinished(long bytes) {
         Log.i(TAG, "Finished, bytes = " + bytes);
-        if (sOnProgressUpdateListener != null)
-            sOnProgressUpdateListener.downloadFinished();
+        if (sOnSyncProgressListener != null)
+            sOnSyncProgressListener.downloadFinished();
     }
 
 }
