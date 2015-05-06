@@ -97,7 +97,7 @@ class ContentSync {
         }
     }
 
-    private static List<Content> getContentList() throws IOException {
+    private static List<Content> getContentList() {
         parseRemoteContentList();
         if (sContentList.isEmpty())
             parseLocalContentList();
