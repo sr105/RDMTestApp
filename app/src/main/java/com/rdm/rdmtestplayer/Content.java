@@ -36,6 +36,10 @@ class Content {
         return ENDPOINT + CONTENT_LIST;
     }
 
+    public static String getLocalContentListUrl() {
+        return BASE_PATH + CONTENT_LIST;
+    }
+
     public Content(final String contentLine) throws IllegalArgumentException {
         final String[] parts = contentLine.split(",");
         if (parts.length < Content.NUM_CONTENT_LINE_PARTS)

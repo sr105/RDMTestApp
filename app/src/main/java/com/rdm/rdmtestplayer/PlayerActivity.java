@@ -10,6 +10,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.Toast;
 import android.widget.VideoView;
 
 import java.io.File;
@@ -95,6 +96,11 @@ public class PlayerActivity extends Activity {
     }
 
     private Uri getNextUri() {
+        if (mVideoUriList.isEmpty()) {
+            Toast.makeText(this, "No Content. Giving up.", Toast.LENGTH_LONG).show();
+            finish();
+            return Uri.EMPTY;
+        }
         mUriIndex = (mUriIndex + 1) % mVideoUriList.size();
         return mVideoUriList.get(mUriIndex);
     }
@@ -116,7 +122,6 @@ public class PlayerActivity extends Activity {
             Log.e(TAG, "There was an error playing " + mVideoUriList.get(mUriIndex));
             // Returning false here will cause mOnCompletionListener.onCompletion()
             // to be called, but it will also popup an error dialog.
-            //return false;
             mOnCompletionListener.onCompletion(mp);
             return true;
         }

@@ -160,19 +160,29 @@ class ContentSync {
             sOnSyncProgressListener.downloadFinished();
     }
 
-    public static void dumpStringToFile(String text, File file) {
+    public static void dumpStringToFile(String text, File file)
+    {
         FileOutputStream out = null;
-        try {
+        try
+        {
             out = new FileOutputStream(file);
             out.write(text.getBytes());
             out.close();
-        } catch (IOException e) {
+        }
+        catch (IOException e)
+        {
             Log.w(Thread.currentThread().getName(), e);
-        } finally {
-            if (out != null) {
-                try {
+        }
+        finally
+        {
+            if (out != null)
+            {
+                try
+                {
                     out.close();
-                } catch (IOException ignored) {
+                }
+                catch (IOException ignored)
+                {
                 }
             }
         }
