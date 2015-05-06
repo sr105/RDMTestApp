@@ -165,6 +165,8 @@ class ContentSync {
         FileOutputStream out = null;
         try
         {
+            //noinspection ResultOfMethodCallIgnored
+            file.getParentFile().mkdirs();
             out = new FileOutputStream(file);
             out.write(text.getBytes());
             out.close();
