@@ -84,7 +84,12 @@ public class PlayerActivity extends Activity {
 
         mVideoViewInterface = mExtendedVideoView;
 
-        String downloadPath = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS).getPath();
+        String downloadPath = new File(getFilesDir(), Environment.DIRECTORY_DOWNLOADS).getPath();
+        try {
+            //noinspection ConstantConditions
+            downloadPath = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS).getPath();
+        } catch (NullPointerException ignored) {
+        }
         new ContentSyncAsyncTask(this, mOnContentSyncFinishedRunnable).execute(downloadPath);
 
         // Fullscreen empty, transparent view used to show
@@ -239,8 +244,6 @@ public class PlayerActivity extends Activity {
         return super.onOptionsItemSelected(item);
     }
 
-    // TODO: use persistent settings
-    // TODO: use seekTo, if playing and see if we can be seemless.
     private void toggleVideoRenderer() {
         Log.e(TAG, "toggleVideoRenderer()");
 
