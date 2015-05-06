@@ -7,8 +7,10 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 import android.widget.VideoView;
@@ -77,6 +79,13 @@ public class PlayerActivity extends Activity {
         mVideoViewInterface.setVisibility(View.INVISIBLE);
 
         new ContentSyncAsyncTask(this, mOnContentSyncFinishedRunnable).execute();
+
+        // Fullscreen empty, transparent view used to show
+        // controls when touched. Added last for top-most
+        // z-order.
+        View v = new View(this);
+        v.setOnTouchListener(mOnHiddenViewTouchListener);
+        rootFrame.addView(v);
     }
 
     private final Runnable mOnContentSyncFinishedRunnable = new Runnable() {
@@ -130,6 +139,7 @@ public class PlayerActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        Log.e(TAG, "VIEW - onResume");
         hideNavigationBar();
         getWindow().getDecorView().setBackgroundColor(Color.parseColor("#ffffff"));
     }
@@ -137,13 +147,54 @@ public class PlayerActivity extends Activity {
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
+        Log.e(TAG, "VIEW - onWindowFocusChanged");
         hideNavigationBar();
     }
 
+    /*
+     * Fullscreen code
+     */
+
+    private final int mUiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+            | View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_LOW_PROFILE;
+
     private void hideNavigationBar() {
         // Everything else (full screen, hide status bar, etc.) is done by our theme
-        int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
-        getWindow().getDecorView().setSystemUiVisibility(uiOptions);
+        Log.e(TAG, "VIEW - hideNavigationBar() ****************************************");
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
+        getWindow().getDecorView().setSystemUiVisibility(mUiOptions);
+        if (getActionBar() != null) {
+            Log.e(TAG, "VIEW - hide action bar");
+            getActionBar().hide();
+        }
     }
 
+    private void showNavigationBar() {
+        Log.e(TAG, "VIEW -- showNavigationBar ##################################");
+        int uiOptions = getWindow().getDecorView().getSystemUiVisibility();
+        uiOptions &= ~mUiOptions;
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
+        getWindow().getDecorView().setSystemUiVisibility(uiOptions);
+        if (getActionBar() != null)
+            getActionBar().show();
+    }
+
+    View.OnTouchListener mOnHiddenViewTouchListener = new View.OnTouchListener() {
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            Log.e(TAG, "VIEW - onTouch");
+            showNavigationBar();
+            final Runnable hideAllRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    hideNavigationBar();
+                }
+            };
+            v.removeCallbacks(hideAllRunnable);
+            v.postDelayed(hideAllRunnable, 5000);
+            return false;
+        }
+    };
 }
