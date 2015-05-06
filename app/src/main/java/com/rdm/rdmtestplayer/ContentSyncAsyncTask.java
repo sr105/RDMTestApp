@@ -9,7 +9,13 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-class ContentSyncAsyncTask extends AsyncTask<Void, String, Void> {
+// The constructor takes an Activity and an onFinishedRunnable. The activity
+// will be used to display progress. The runnable, if not null, will be
+// called when synchronization is complete.
+//
+// The execute() takes one optional argument: a local base path for storing
+// content. If null, it defaults to Content.getDownloadPath().
+class ContentSyncAsyncTask extends AsyncTask<String, String, Void> {
 
     private final Runnable mOnFinishedRunnable;
 
@@ -87,9 +93,12 @@ class ContentSyncAsyncTask extends AsyncTask<Void, String, Void> {
     }
 
     @Override
-    protected Void doInBackground(Void... params) {
+    protected Void doInBackground(String... params) {
+        String downloadPath = null;
+        if (params.length > 0)
+            downloadPath = params[0];
         try {
-            ContentSync.sync(mOnSyncProgressListener);
+            ContentSync.sync(mOnSyncProgressListener, downloadPath);
         } catch (Exception e) {
             publishProgress("x", e.getLocalizedMessage());
             e.printStackTrace();

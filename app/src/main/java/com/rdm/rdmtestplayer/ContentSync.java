@@ -34,7 +34,9 @@ class ContentSync {
 
     private static OnSyncProgressListener sOnSyncProgressListener;
 
-    public static void sync(OnSyncProgressListener onSyncProgressListener) throws IOException {
+    public static void sync(OnSyncProgressListener onSyncProgressListener,
+                            String downloadPath) throws IOException {
+        Content.setDownloadPath(downloadPath);
         sOnSyncProgressListener = onSyncProgressListener;
         List<Content> contentList = getContentList();
         if (sOnSyncProgressListener != null) {

@@ -1,6 +1,7 @@
 package com.rdm.rdmtestplayer;
 
 import android.net.Uri;
+import android.os.Environment;
 import android.util.Log;
 
 import java.io.File;
@@ -20,11 +21,12 @@ import java.security.NoSuchAlgorithmException;
 class Content {
     private static final String TAG = "Content";
 
-    // TODO: use getExternalFilesDir() or similar here for BASE_PATH
-    private static final String BASE_PATH = "/sdcard/media/";
-    private static final String ENDPOINT = "http://3gfp.com/i/rdm_test_media/";
+    private static final String DEFAULT_DOWNLOAD_PATH = new File(Environment.getExternalStorageDirectory(), "media").getPath();
+    private static final String BASE_URL = "http://3gfp.com/i/rdm_test_media/";
     private static final String CONTENT_LIST = "content_list";
     private static final int NUM_CONTENT_LINE_PARTS = 3;
+
+    private static String sDownloadPath = DEFAULT_DOWNLOAD_PATH;
 
     private boolean mUpToDate = false;
     private String mRemotePath;
@@ -32,12 +34,23 @@ class Content {
     private long mSizeInBytes;
     private String mMd5String;
 
+    public static String getDownloadPath() {
+        return sDownloadPath;
+    }
+
+    public static void setDownloadPath(String downloadPath) {
+        if (downloadPath == null)
+            sDownloadPath = DEFAULT_DOWNLOAD_PATH;
+        else
+            sDownloadPath = downloadPath;
+    }
+
     public static String getContentListUrl() {
-        return ENDPOINT + CONTENT_LIST;
+        return BASE_URL + CONTENT_LIST;
     }
 
     public static String getLocalContentListUrl() {
-        return BASE_PATH + CONTENT_LIST;
+        return new File(getDownloadPath(), CONTENT_LIST).getPath();
     }
 
     public Content(final String contentLine) throws IllegalArgumentException {
@@ -46,8 +59,8 @@ class Content {
             throw new IllegalArgumentException("Invalid content line: " + contentLine);
 
         final String fileName = parts[0];
-        mRemotePath = ENDPOINT + Uri.encode(fileName, "/");
-        mLocalPath = BASE_PATH + fileName;
+        mRemotePath = BASE_URL + Uri.encode(fileName, "/");
+        mLocalPath = new File(getDownloadPath(), fileName).getPath();
         mSizeInBytes = Long.valueOf(parts[1]);
         mMd5String = parts[2];
 

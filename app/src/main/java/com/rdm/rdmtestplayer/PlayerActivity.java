@@ -6,6 +6,7 @@ import android.graphics.Color;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -83,7 +84,8 @@ public class PlayerActivity extends Activity {
 
         mVideoViewInterface = mExtendedVideoView;
 
-        new ContentSyncAsyncTask(this, mOnContentSyncFinishedRunnable).execute();
+        String downloadPath = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS).getPath();
+        new ContentSyncAsyncTask(this, mOnContentSyncFinishedRunnable).execute(downloadPath);
 
         // Fullscreen empty, transparent view used to show
         // controls when touched. Added last for top-most
