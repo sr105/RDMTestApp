@@ -1,6 +1,7 @@
 package com.rdm.rdmtestplayer;
 
 import android.app.Activity;
+import android.content.Context;
 import android.graphics.Color;
 import android.media.MediaPlayer;
 import android.net.Uri;
@@ -19,8 +20,41 @@ import java.util.List;
 public class PlayerActivity extends Activity {
     private static final String TAG = "PlayerActivity";
 
-    private VideoView mVideoView;
+    private interface VideoViewInterface {
+        View getView();
 
+        void setVideoURI(Uri uri);
+
+        void setOnCompletionListener(MediaPlayer.OnCompletionListener l);
+
+        void setOnErrorListener(MediaPlayer.OnErrorListener l);
+
+        void start();
+
+        void setVisibility(int visibility);
+    }
+
+    private class ExtendedVideoView extends VideoView implements VideoViewInterface {
+        public ExtendedVideoView(Context context) {
+            super(context);
+        }
+
+        public View getView() {
+            return this;
+        }
+    }
+
+    private class ExtendedSurfaceTextureVideoView extends SurfaceTextureVideoView implements VideoViewInterface {
+        public ExtendedSurfaceTextureVideoView(Context context) {
+            super(context);
+        }
+
+        public View getView() {
+            return this;
+        }
+    }
+
+    private VideoViewInterface mVideoViewInterface;
     private List<Uri> mVideoUriList;
     private int mUriIndex = -1;
 
@@ -29,14 +63,17 @@ public class PlayerActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_player);
 
-        mVideoView = new VideoView(this);
-        mVideoView.setOnCompletionListener(mOnCompletionListener);
-        mVideoView.setOnErrorListener(mOnErrorListener);
         FrameLayout rootFrame = (FrameLayout) findViewById(R.id.rootFrame);
-        rootFrame.addView(mVideoView,
+
+        mVideoViewInterface = new ExtendedSurfaceTextureVideoView(this);
+//        mVideoViewInterface = new ExtendedVideoView(this);
+
+        mVideoViewInterface.setOnCompletionListener(mOnCompletionListener);
+        mVideoViewInterface.setOnErrorListener(mOnErrorListener);
+        rootFrame.addView(mVideoViewInterface.getView(),
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT);
-        mVideoView.setVisibility(View.INVISIBLE);
+        mVideoViewInterface.setVisibility(View.INVISIBLE);
 
         new ContentSyncAsyncTask(this, mOnContentSyncFinishedRunnable).execute();
     }
@@ -44,7 +81,7 @@ public class PlayerActivity extends Activity {
     private final Runnable mOnContentSyncFinishedRunnable = new Runnable() {
         @Override
         public void run() {
-            mVideoView.setVisibility(View.VISIBLE);
+            mVideoViewInterface.setVisibility(View.VISIBLE);
             populateVideoList();
             mOnCompletionListener.onCompletion(null);
         }
@@ -68,8 +105,8 @@ public class PlayerActivity extends Activity {
                 public void onCompletion(MediaPlayer mp) {
                     Uri uri = getNextUri();
                     Log.i(TAG, "Start: " + new File(uri.getPath()).getName());
-                    mVideoView.setVideoURI(uri);
-                    mVideoView.start();
+                    mVideoViewInterface.setVideoURI(uri);
+                    mVideoViewInterface.start();
                 }
             };
 

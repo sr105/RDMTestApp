@@ -4,9 +4,13 @@ import android.util.Log;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Reader;
 import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -54,20 +58,47 @@ class ContentSync {
         return localList;
     }
 
-    private static List<Content> getContentList() throws IOException {
-        sContentList = new ArrayList<>();
-        String list = getUrl(Content.getContentListUrl());
-        StringReader stringReader = new StringReader(list);
-        BufferedReader bufferedReader = new BufferedReader(stringReader);
-        String line;
-        while ((line = bufferedReader.readLine()) != null) {
-            try {
-                sContentList.add(new Content(line));
-            } catch (IllegalArgumentException e) {
-                Log.e(TAG, "", e);
-            }
+    private static void parseRemoteContentList() {
+        try {
+            String list = getUrl(Content.getContentListUrl());
+            parseContentList(new StringReader(list));
+            // update local copy, if parsed successfully
+            if (!sContentList.isEmpty())
+                dumpStringToFile(list, new File(Content.getLocalContentListUrl()));
+        } catch (IOException e) {
+            Log.e(TAG, "", e);
         }
+    }
 
+    private static void parseLocalContentList() {
+        try {
+            parseContentList(new FileReader(new File(Content.getLocalContentListUrl())));
+        } catch (IOException e) {
+            Log.e(TAG, "", e);
+        }
+    }
+
+    private static void parseContentList(Reader reader) {
+        sContentList = new ArrayList<>();
+        try {
+            BufferedReader bufferedReader = new BufferedReader(reader);
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                try {
+                    sContentList.add(new Content(line));
+                } catch (IllegalArgumentException e) {
+                    Log.e(TAG, "", e);
+                }
+            }
+        } catch (IOException e) {
+            Log.e(TAG, "", e);
+        }
+    }
+
+    private static List<Content> getContentList() throws IOException {
+        parseRemoteContentList();
+        if (sContentList.isEmpty())
+            parseLocalContentList();
         return sContentList;
     }
 
@@ -127,6 +158,24 @@ class ContentSync {
         //Log.i(TAG, "Finished, bytes = " + bytes);
         if (sOnSyncProgressListener != null)
             sOnSyncProgressListener.downloadFinished();
+    }
+
+    public static void dumpStringToFile(String text, File file) {
+        FileOutputStream out = null;
+        try {
+            out = new FileOutputStream(file);
+            out.write(text.getBytes());
+            out.close();
+        } catch (IOException e) {
+            Log.w(Thread.currentThread().getName(), e);
+        } finally {
+            if (out != null) {
+                try {
+                    out.close();
+                } catch (IOException ignored) {
+                }
+            }
+        }
     }
 
 }
