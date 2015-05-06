@@ -7,6 +7,8 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -34,6 +36,10 @@ public class PlayerActivity extends Activity {
 
         void start();
 
+        void stopPlayback();
+
+        boolean isPlaying();
+
         void setVisibility(int visibility);
     }
 
@@ -57,6 +63,8 @@ public class PlayerActivity extends Activity {
         }
     }
 
+    private ExtendedSurfaceTextureVideoView mExtendedSurfaceTextureVideoView;
+    private ExtendedVideoView mExtendedVideoView;
     private VideoViewInterface mVideoViewInterface;
     private List<Uri> mVideoUriList;
     private int mUriIndex = -1;
@@ -68,15 +76,12 @@ public class PlayerActivity extends Activity {
 
         FrameLayout rootFrame = (FrameLayout) findViewById(R.id.rootFrame);
 
-        mVideoViewInterface = new ExtendedSurfaceTextureVideoView(this);
-//        mVideoViewInterface = new ExtendedVideoView(this);
+        mExtendedSurfaceTextureVideoView = new ExtendedSurfaceTextureVideoView(this);
+        addVideoViewInterface(rootFrame, mExtendedSurfaceTextureVideoView);
+        mExtendedVideoView = new ExtendedVideoView(this);
+        addVideoViewInterface(rootFrame, mExtendedVideoView);
 
-        mVideoViewInterface.setOnCompletionListener(mOnCompletionListener);
-        mVideoViewInterface.setOnErrorListener(mOnErrorListener);
-        rootFrame.addView(mVideoViewInterface.getView(),
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT);
-        mVideoViewInterface.setVisibility(View.INVISIBLE);
+        mVideoViewInterface = mExtendedVideoView;
 
         new ContentSyncAsyncTask(this, mOnContentSyncFinishedRunnable).execute();
 
@@ -88,12 +93,21 @@ public class PlayerActivity extends Activity {
         rootFrame.addView(v);
     }
 
+    private void addVideoViewInterface(ViewGroup parent, VideoViewInterface videoViewInterface) {
+        videoViewInterface.setOnCompletionListener(mOnCompletionListener);
+        videoViewInterface.setOnErrorListener(mOnErrorListener);
+        parent.addView(videoViewInterface.getView(),
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT);
+        videoViewInterface.setVisibility(View.INVISIBLE);
+    }
+
     private final Runnable mOnContentSyncFinishedRunnable = new Runnable() {
         @Override
         public void run() {
-            mVideoViewInterface.setVisibility(View.VISIBLE);
             populateVideoList();
-            mOnCompletionListener.onCompletion(null);
+            toggleVideoRenderer();
+            mVideoToggleMenuItem.setEnabled(true);
         }
     };
 
@@ -197,4 +211,56 @@ public class PlayerActivity extends Activity {
             return false;
         }
     };
+
+    MenuItem mVideoToggleMenuItem;
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_player, menu);
+        mVideoToggleMenuItem = menu.findItem(R.id.menu_toggle);
+        mVideoToggleMenuItem.setEnabled(false);
+        return (super.onCreateOptionsMenu(menu));
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        switch (item.getItemId()) {
+
+            case R.id.menu_toggle:
+                toggleVideoRenderer();
+                break;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    // TODO: use persistent settings
+    // TODO: use seekTo, if playing and see if we can be seemless.
+    private void toggleVideoRenderer() {
+        Log.e(TAG, "toggleVideoRenderer()");
+
+        // out with the old...
+        if (mVideoViewInterface.isPlaying())
+            mVideoViewInterface.stopPlayback();
+        mVideoViewInterface.setVisibility(View.GONE);
+
+        // ...in with the new
+        if (mVideoViewInterface == mExtendedVideoView)
+            mVideoViewInterface = mExtendedSurfaceTextureVideoView;
+        else
+            mVideoViewInterface = mExtendedVideoView;
+        mVideoViewInterface.setVisibility(View.VISIBLE);
+        mOnCompletionListener.onCompletion(null);
+        updateToggleVideoRendererMenuItem();
+    }
+
+    private void updateToggleVideoRendererMenuItem() {
+        if (mVideoViewInterface == mExtendedVideoView)
+            mVideoToggleMenuItem.setTitle("VideoView");
+        else
+            mVideoToggleMenuItem.setTitle("SurfaceTexture");
+    }
 }

@@ -1,6 +1,8 @@
 <resources>
     <string name="app_name">RDM Test Player</string>
 
+    <string name="menu_toggle">Toggle Renderer</string>
+
     <string name="play_error_message">Impossible to play the video.</string>
     <string name="play_progressive_error_message">Impossible to play the progressive video.</string>
 </resources>
