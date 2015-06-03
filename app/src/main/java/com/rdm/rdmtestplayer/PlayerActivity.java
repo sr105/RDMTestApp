@@ -27,6 +27,8 @@ public class PlayerActivity extends Activity {
     private static final String TAG = "PlayerActivity";
 
     private interface VideoViewInterface {
+        String getName();
+
         View getView();
 
         void setVideoURI(Uri uri);
@@ -45,6 +47,8 @@ public class PlayerActivity extends Activity {
     }
 
     private class ExtendedVideoView extends VideoView implements VideoViewInterface {
+        public String getName() { return "VideoView"; }
+
         public ExtendedVideoView(Context context) {
             super(context);
         }
@@ -55,6 +59,8 @@ public class PlayerActivity extends Activity {
     }
 
     private class ExtendedSurfaceTextureVideoView extends SurfaceTextureVideoView implements VideoViewInterface {
+        public String getName() { return "SurfaceTexture"; }
+
         public ExtendedSurfaceTextureVideoView(Context context) {
             super(context);
         }
@@ -64,9 +70,20 @@ public class PlayerActivity extends Activity {
         }
     }
 
-    private ExtendedSurfaceTextureVideoView mExtendedSurfaceTextureVideoView;
-    private ExtendedVideoView mExtendedVideoView;
-    private VideoViewInterface mVideoViewInterface;
+    private class ExtendedSurfaceVideoView extends SurfaceVideoView implements VideoViewInterface {
+        public String getName() { return "SurfaceView"; }
+
+        public ExtendedSurfaceVideoView(Context context) {
+            super(context);
+        }
+
+        public View getView() {
+            return this;
+        }
+    }
+
+    private ArrayList<VideoViewInterface> mVideoViewInterfaces;
+    private int mVideoViewInterfaceIndex = -1;
     private List<Uri> mVideoUriList;
     private int mUriIndex = -1;
 
@@ -77,12 +94,9 @@ public class PlayerActivity extends Activity {
 
         FrameLayout rootFrame = (FrameLayout) findViewById(R.id.rootFrame);
 
-        mExtendedSurfaceTextureVideoView = new ExtendedSurfaceTextureVideoView(this);
-        addVideoViewInterface(rootFrame, mExtendedSurfaceTextureVideoView);
-        mExtendedVideoView = new ExtendedVideoView(this);
-        addVideoViewInterface(rootFrame, mExtendedVideoView);
-
-        mVideoViewInterface = mExtendedVideoView;
+        addVideoViewInterface(rootFrame, new ExtendedSurfaceVideoView(this));
+        addVideoViewInterface(rootFrame, new ExtendedSurfaceTextureVideoView(this));
+        addVideoViewInterface(rootFrame, new ExtendedVideoView(this));
 
         String downloadPath = new File(getFilesDir(), Environment.DIRECTORY_DOWNLOADS).getPath();
         try {
@@ -107,6 +121,10 @@ public class PlayerActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT);
         videoViewInterface.setVisibility(View.INVISIBLE);
+        if (mVideoViewInterfaces == null)
+            mVideoViewInterfaces = new ArrayList<>();
+        mVideoViewInterfaces.add(videoViewInterface);
+        mVideoViewInterfaceIndex = mVideoViewInterfaces.size() - 1;
     }
 
     private final Runnable mOnContentSyncFinishedRunnable = new Runnable() {
@@ -141,8 +159,8 @@ public class PlayerActivity extends Activity {
                 public void onCompletion(MediaPlayer mp) {
                     Uri uri = getNextUri();
                     Log.i(TAG, "Start: " + new File(uri.getPath()).getName());
-                    mVideoViewInterface.setVideoURI(uri);
-                    mVideoViewInterface.start();
+                    mVideoViewInterfaces.get(mVideoViewInterfaceIndex).setVideoURI(uri);
+                    mVideoViewInterfaces.get(mVideoViewInterfaceIndex).start();
                 }
             };
 
@@ -247,25 +265,24 @@ public class PlayerActivity extends Activity {
     private void toggleVideoRenderer() {
         Log.e(TAG, "toggleVideoRenderer()");
 
+        if (mVideoViewInterfaces.isEmpty())
+            return;
+
         // out with the old...
-        if (mVideoViewInterface.isPlaying())
-            mVideoViewInterface.stopPlayback();
-        mVideoViewInterface.setVisibility(View.GONE);
+        VideoViewInterface videoViewInterface = mVideoViewInterfaces.get(mVideoViewInterfaceIndex);
+        if (videoViewInterface.isPlaying())
+            videoViewInterface.stopPlayback();
+        videoViewInterface.setVisibility(View.GONE);
 
         // ...in with the new
-        if (mVideoViewInterface == mExtendedVideoView)
-            mVideoViewInterface = mExtendedSurfaceTextureVideoView;
-        else
-            mVideoViewInterface = mExtendedVideoView;
-        mVideoViewInterface.setVisibility(View.VISIBLE);
+        mVideoViewInterfaceIndex = (mVideoViewInterfaceIndex + 1) % mVideoViewInterfaces.size();
+        videoViewInterface = mVideoViewInterfaces.get(mVideoViewInterfaceIndex);
+        videoViewInterface.setVisibility(View.VISIBLE);
         mOnCompletionListener.onCompletion(null);
-        updateToggleVideoRendererMenuItem();
+        updateToggleVideoRendererMenuItem(videoViewInterface.getName());
     }
 
-    private void updateToggleVideoRendererMenuItem() {
-        if (mVideoViewInterface == mExtendedVideoView)
-            mVideoToggleMenuItem.setTitle("VideoView");
-        else
-            mVideoToggleMenuItem.setTitle("SurfaceTexture");
+    private void updateToggleVideoRendererMenuItem(String name) {
+        mVideoToggleMenuItem.setTitle(name);
     }
 }

@@ -9,7 +9,8 @@ import android.net.Uri;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Surface;
-import android.view.TextureView;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.widget.MediaController;
 
 import java.io.IOException;
@@ -21,9 +22,9 @@ import java.util.concurrent.TimeUnit;
  * from https://github.com/malmstein/fenster but without any of the GUI
  * controls. This is meant to be a programmatically controlled video player.
  */
-public class SurfaceTextureVideoView extends TextureView implements
+public class SurfaceVideoView extends SurfaceView implements
         MediaController.MediaPlayerControl {
-    private static String TAG = "SurfaceTextureVideoView";
+    private static String TAG = "SurfaceVideoView";
 
     public static final int VIDEO_BEGINNING = 0;
 
@@ -56,7 +57,6 @@ public class SurfaceTextureVideoView extends TextureView implements
     private int mTargetState = STATE_IDLE;
 
     // All the stuff we need for playing and showing a video
-    private SurfaceTexture mSurfaceTexture;
     private MediaPlayer mMediaPlayer = null;
     private final VideoSizeCalculator videoSizeCalculator;
 
@@ -76,18 +76,18 @@ public class SurfaceTextureVideoView extends TextureView implements
      * Setup & Initialization
      */
 
-    public SurfaceTextureVideoView(final Context context) {
+    public SurfaceVideoView(final Context context) {
         super(context);
         videoSizeCalculator = new VideoSizeCalculator();
         initVideoView();
     }
 
-    public SurfaceTextureVideoView(final Context context, final AttributeSet attrs) {
+    public SurfaceVideoView(final Context context, final AttributeSet attrs) {
         this(context, attrs, 0);
     }
 
-    public SurfaceTextureVideoView(final Context context, final AttributeSet attrs,
-                                   final int defStyle) {
+    public SurfaceVideoView(final Context context, final AttributeSet attrs,
+                            final int defStyle) {
         super(context, attrs, defStyle);
         videoSizeCalculator = new VideoSizeCalculator();
         initVideoView();
@@ -97,7 +97,7 @@ public class SurfaceTextureVideoView extends TextureView implements
         videoSizeCalculator.setVideoSize(0, 0);
         mVolumeLevel = 1.0f;
 
-        setSurfaceTextureListener(mSTListener);
+        getHolder().addCallback(mSurfaceHolderCallback);
 
         setFocusable(false);
         setFocusableInTouchMode(false);
@@ -185,7 +185,7 @@ public class SurfaceTextureVideoView extends TextureView implements
             mMediaPlayer.setOnBufferingUpdateListener(mBufferingUpdateListener);
             mCurrentBufferPercentage = 0;
             mMediaPlayer.setDataSource(getContext(), mUri, mHeaders);
-            mMediaPlayer.setSurface(new Surface(mSurfaceTexture));
+            mMediaPlayer.setDisplay(getHolder());
             mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
             mMediaPlayer.setScreenOnWhilePlaying(true);
             mMediaPlayer.prepareAsync();
@@ -199,7 +199,7 @@ public class SurfaceTextureVideoView extends TextureView implements
     }
 
     private boolean notReadyForPlaybackJustYetWillTryAgainLater() {
-        return mUri == null || mSurfaceTexture == null;
+        return mUri == null || getHolder().getSurface() == null;
     }
 
     private void tellTheMusicPlaybackServiceToPause() {
@@ -634,20 +634,25 @@ public class SurfaceTextureVideoView extends TextureView implements
     }
 
     /*
-     * SurfaceTexture Listener
+     * SurfaceHolder Listener
      */
 
-    private final SurfaceTextureListener mSTListener = new SurfaceTextureListener() {
+    private SurfaceHolder.Callback mSurfaceHolderCallback = new SurfaceHolder.Callback() {
         @Override
-        public void onSurfaceTextureAvailable(final SurfaceTexture surface,
-                                              final int width, final int height) {
-            mSurfaceTexture = surface;
+        public void surfaceCreated(SurfaceHolder holder) {
+            Log.d(TAG, "surfaceCreated");
+            // fill with black color
+            // mVideoView.setBackgroundColor(0xFF000000);
+
             openVideo();
         }
 
         @Override
-        public void onSurfaceTextureSizeChanged(final SurfaceTexture surface,
-                                                final int width, final int height) {
+        public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+            Log.d(TAG, "surfaceChanged: " + width + " x " + height);
+            // fill with transparent color
+            // mSurfaceView.setBackgroundColor(0x00000000);
+
             boolean isValidState = (mTargetState == STATE_PLAYING);
             boolean hasValidSize = videoSizeCalculator.currentSizeIs(width,
                     height);
@@ -660,15 +665,9 @@ public class SurfaceTextureVideoView extends TextureView implements
         }
 
         @Override
-        public boolean onSurfaceTextureDestroyed(final SurfaceTexture surface) {
-            mSurfaceTexture = null;
+        public void surfaceDestroyed(SurfaceHolder holder) {
+            Log.d(TAG, "surfaceDestroyed");
             release(true);
-            return false;
-        }
-
-        @Override
-        public void onSurfaceTextureUpdated(final SurfaceTexture surface) {
-            mSurfaceTexture = surface;
         }
     };
 
