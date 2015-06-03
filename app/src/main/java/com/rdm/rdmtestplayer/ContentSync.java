@@ -87,6 +87,8 @@ class ContentSync {
             String line;
             while ((line = bufferedReader.readLine()) != null) {
                 try {
+                    if (line.isEmpty())
+                        continue;
                     sContentList.add(new Content(line));
                 } catch (IllegalArgumentException e) {
                     Log.e(TAG, "", e);
