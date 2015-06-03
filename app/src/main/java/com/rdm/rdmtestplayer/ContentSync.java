@@ -101,7 +101,7 @@ class ContentSync {
 
     private static List<Content> getContentList() {
         parseRemoteContentList();
-        if (sContentList.isEmpty())
+        if (sContentList == null || sContentList.isEmpty())
             parseLocalContentList();
         return sContentList;
     }
@@ -136,10 +136,12 @@ class ContentSync {
             }
             downloadFinished(totalBytesRead);
             return true;
+        } catch (Exception ignored) {
         } finally {
             outputStream.close();
             connection.disconnect();
         }
+        return false;
     }
 
     private static String getUrl(String urlSpec) throws IOException {
